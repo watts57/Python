@@ -1,46 +1,20 @@
+#My Name: William Watts, My Partner: John Bedingfield
+'''
+John Bedingfield(bedingjd@uab.edu)
+William Watts (watts57@uab.edu)
 '''
 
-Work in progress. Still trying to find the cleanest way to struccture this.
 
-CONCLUSION> THREADING IS A DEAD END AS FAR AS QUITTING GRACEFULLY GOES. MULTIPROCESSING SEEMS TO BE A SAFER BET
-AS FAR AS INCLUDED MODULES GO IN PYTHON. PYTHON BEHAVES DIFFERENTLY THAN JAVA IN THIS REGARD.
-
-
-==============TO DO: ====================
-
-NOTES: 5:07PM
-3/25/20
-Multiprocessing module:   ---> as in, you type "import multiprocessing"
-
-With multiprocessing module it
-may be possible to do what I've struggled with for 30 hours in 5 minutes using that module.
-It's an included Python 3 module that works very similarly to threading.
-Threading is supposed to be more ideal for non CPU intensive tasks, while multiprocessing is supposed to be
-more ideal for CPU intensive tasks. Since this is fairly lightweight, I suppose we can sacrifice some efficiency for
-the sake of sanity.
-
-
-LAST BIG THING TO TEST:
-multiprocessing
-
-
-Last things:
-debug?
-clean up print statements if needed (check)
-test with client called normally and with -s to make sure all is well
-see if client can be cleaned up any
-
-
-
-
-'''
-
+print("CS334 Project 1.......by John Bedingfield and William Watts")
 #####################IMPORT MODULES
+import multiprocessing
+
 import sys
 import time
 import socket
 import ssl
 import random
+from multiprocessing.synchronize import Event
 
 IDLE = 1
 ######################################CRUCIAL VARIABLES###########################################################
@@ -52,9 +26,10 @@ HOST = '127.0.0.1'
 # HOST = '::1'
 PORT = 3310
 PORTSSL = 27994
-TIMER_INIT = 5
 
-STARTED = 0
+
+FINISHED = multiprocessing.Event()
+
 
 certLocation = "C:\\Program Files\OpenSSL-Win64\\bin\\public.cer"
 keyLocation = "C:\\Program Files\OpenSSL-Win64\\bin\\private.key"
@@ -168,6 +143,8 @@ def encrypted_socket(HOST, PORTSSL):
         # print status
         print('Client from ' + str(addr[0]) + ' at port ' + str(addr[1]) + ' connected')
 
+
+
         connstream = context.wrap_socket(newsocket, server_side=True)
         try:
             # myMethod(connstream)  # if we want to put this in a seperate method
@@ -258,10 +235,11 @@ def encrypted_socket(HOST, PORTSSL):
                 print()
                 print('done closing socket')
 
+
                 # connect via UDP and finish
                 UDP_socket(HOST, newUDPRobotPort, newUDPStudentPort)
-
-
+                newsocket2.close()
+                newsocket.close()
             else:
                 print('That is not a valid BlazerID')
 
@@ -271,8 +249,6 @@ def encrypted_socket(HOST, PORTSSL):
             connstream.close()
 
     return
-
-
 
 def UDP_socket(HOST, RobotPort, StudentPort):
     '''
@@ -325,10 +301,12 @@ def UDP_socket(HOST, RobotPort, StudentPort):
     # check to ensure the strings match
     if numString == x3String:
         print('The two strings are the same.')
-
-
-
-
+        s3.close()
+        s3b.close()
+        FINISHED.set()
+        print("Finished...")
+        print("Goodbye.")
+        print("When ready to exit, you may press CTRL C or close the window...")
 
     else:
         print('The two strings are NOT the same.')
@@ -342,7 +320,7 @@ def UDP_socket(HOST, RobotPort, StudentPort):
     s3.close()
     s3b.close()
     # s3c.close()
-
+    FINISHED.set()
     return
 
 
@@ -362,63 +340,40 @@ def createNumString(xxx):
     return numString
 
 
-# ======= start main =======
-if STARTED == 0:
-    print('NEW-IMPROVED-SSL-CAPABLE ROBOT IS STARTED')
-    print()
-    print('Creating TCP socket...')
-    STARTED = STARTED +1
 
 
 
-
-
-
-import multiprocessing
 
 
 p1= multiprocessing.Process(target = unecrypted_socket, args= (HOST,PORT)) #same general idea as threading
+
+process1Name = p1.name
 #this has more built in functionality than threading does in python.
 p2= multiprocessing.Process(target=encrypted_socket, args=(HOST, PORTSSL))
+process2Name = p2.name
 
-global processes
+processNames = [process1Name,process2Name]
 processes = []
 processes.append(p1)
 processes.append(p2)
 
-#perhaps killing the thread that controls the port NOT chosen will stop the hang up?
-
-
-
+####perhaps a simple state machine implemented someting like this?
 
 if __name__ == '__main__': #this prevents this from happening recursively --- makesit so p1 and p2 are only called from main
+    # ======= start main =======
+    if FINISHED.is_set():
+        print("Finished!")
+        for p in processes:
+            p.terminate()
 
+    print('NEW-IMPROVED-SSL-CAPABLE ROBOT IS STARTED')
+    print()
+    print('Creating TCP socket...')
+    index = 0
     for p in processes:
         p.start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        print("p.start()...called on ",processNames[index])
+        index = index+1
 
 
 
